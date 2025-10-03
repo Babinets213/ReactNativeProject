@@ -10,36 +10,26 @@ import { useAppDispatch, useAppSelector, useUserInfo } from '@/hooks'
 import { addToCart } from '@/store'
 import { exsitItem } from '@/utils'
 
-const AddToCartOperation = props => {
-  //? Props
-  const { product } = props
-
-  //? Assets
+const AddToCartOperation = ({ product }) => {
   const dispatch = useAppDispatch()
-
-  //? Store
   const { cartItems, tempColor, tempSize } = useAppSelector(state => state.cart)
+  const { mustAuthAction } = useUserInfo()
 
-  //? State
-  const [currentItemInCart, setCurrentItemInCart] = useState(undefined)
+  const [currentItemInCart, setCurrentItemInCart] = useState()
 
-  //? Get User Data
-  const { userInfo, mustAuthAction } = useUserInfo()
-
-  //? Re-Renders
   useEffect(() => {
-    const item = exsitItem(cartItems, product._id, tempColor, tempSize)
-    setCurrentItemInCart(item)
-  }, [tempColor, tempSize, cartItems])
+    setCurrentItemInCart(exsitItem(cartItems, product._id, tempColor, tempSize))
+  }, [cartItems, product._id, tempColor, tempSize])
 
-  //? handlers
-  const handleAddItem = () => {
+  const handleAddItem = () =>
     mustAuthAction(() => {
-      if (product.inStock === 0)
+      if (!product.inStock) {
         return Toast.show({
           type: 'error',
-          text2: '此商品缺货',
+          text1: 'Out of Stock',
+          text2: 'This product is currently unavailable',
         })
+      }
 
       dispatch(
         addToCart({
@@ -51,36 +41,31 @@ const AddToCartOperation = props => {
           sold: product.sold,
           color: tempColor,
           size: tempSize,
-          img: product.images[0],
+          img: product.images?.[0],
           quantity: 1,
         })
       )
     })
-  }
 
-  //? Render(s)
   return (
-    <View className="flex flex-row items-center justify-between p-3 bg-white border-t border-gray-300 px-5 shadow-3xl ">
+    <View className="flex-row items-center justify-between p-4 bg-white border-t border-gray-200 shadow-md rounded-t-lg">
       {currentItemInCart ? (
-        <View className="flex gap-x-4">
-          <View className="w-44">
-            <CartButtons item={currentItemInCart} />
-          </View>
-        </View>
+        <CartButtons item={currentItemInCart} className="flex-1 mr-4" />
       ) : (
-        <Button onPress={handleAddItem} className="px-12 text-sm btn">
-          添加到购物车
+        <Button
+          onPress={handleAddItem}
+          className="flex-1 mr-4 bg-blue-600 text-white py-3 rounded-lg text-center"
+        >
+          Add to Cart
         </Button>
       )}
 
-      <View className="min-w-fit">
-        <ProductPrice
-          inStock={product.inStock}
-          discount={product.discount}
-          price={product.price}
-          singleProduct
-        />
-      </View>
+      <ProductPrice
+        inStock={product.inStock}
+        discount={product.discount}
+        price={product.price}
+        singleProduct
+      />
     </View>
   )
 }
